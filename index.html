@@ -118,9 +118,8 @@
       import * as THREE from "three";
       import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-      const EARTH_TEXTURE_URL =
-        "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg";
-      const COUNTRY_DATA_URL = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
+      const EARTH_TEXTURE_URL = "./assets/earth_atmos_2048.jpg";
+      const COUNTRY_DATA_URL = "./assets/countries.geo.json";
       const COUNTRY_CANVAS_WIDTH = 4096;
       const COUNTRY_CANVAS_HEIGHT = 2048;
 
@@ -417,8 +416,8 @@
             throw new Error("GeoJSON invàlid");
           }
 
-          countryFeatures = data.features.filter(({ geometry }) =>
-            geometry?.type === "Polygon" || geometry?.type === "MultiPolygon",
+          countryFeatures = data.features.filter(({ geometry, properties }) =>
+            (geometry?.type === "Polygon" || geometry?.type === "MultiPolygon") && Boolean(properties?.name),
           );
           countryFeaturesByName = countryFeatures.reduce((groups, feature) => {
             const name = feature.properties.name;
