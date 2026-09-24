@@ -274,6 +274,10 @@
       const globeCenterWorld = new THREE.Vector3();
       const anchorFromCenter = new THREE.Vector3();
       const cameraFromAnchor = new THREE.Vector3();
+      let mapTagCanvasOffsetLeft = 0;
+      let mapTagCanvasOffsetTop = 0;
+      let mapTagCanvasWidth = renderer.domElement.clientWidth;
+      let mapTagCanvasHeight = renderer.domElement.clientHeight;
       let countryFeatures = [];
       let countryFeaturesByName = new Map();
       let selectedCountryName = "";
@@ -420,6 +424,15 @@
         countrySelect.value = name;
       };
 
+      const refreshMapTagProjectionMetrics = () => {
+        const appRect = app.getBoundingClientRect();
+        const canvasRect = renderer.domElement.getBoundingClientRect();
+        mapTagCanvasOffsetLeft = canvasRect.left - appRect.left;
+        mapTagCanvasOffsetTop = canvasRect.top - appRect.top;
+        mapTagCanvasWidth = canvasRect.width;
+        mapTagCanvasHeight = canvasRect.height;
+      };
+
       const hideMapCountryTagElement = () => {
         mapCountryTag.hidden = true;
       };
@@ -462,11 +475,9 @@
           return;
         }
 
-        const appRect = app.getBoundingClientRect();
-        const canvasRect = renderer.domElement.getBoundingClientRect();
         mapCountryTag.hidden = false;
-        mapCountryTag.style.left = `${canvasRect.left - appRect.left + (projectedPoint.x * 0.5 + 0.5) * canvasRect.width}px`;
-        mapCountryTag.style.top = `${canvasRect.top - appRect.top + (-projectedPoint.y * 0.5 + 0.5) * canvasRect.height}px`;
+        mapCountryTag.style.left = `${mapTagCanvasOffsetLeft + (projectedPoint.x * 0.5 + 0.5) * mapTagCanvasWidth}px`;
+        mapCountryTag.style.top = `${mapTagCanvasOffsetTop + (-projectedPoint.y * 0.5 + 0.5) * mapTagCanvasHeight}px`;
       };
 
       const showMapCountryTag = (name, point) => {
@@ -604,9 +615,11 @@
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        refreshMapTagProjectionMetrics();
       };
 
       window.addEventListener("resize", resize);
+      window.addEventListener("scroll", refreshMapTagProjectionMetrics, { passive: true });
       resize();
       renderer.domElement.style.cursor = "grab";
 
