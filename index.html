@@ -117,6 +117,7 @@
     <script type="module">
       import * as THREE from "three";
       import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { prepareCountryData } from "./globe-country-utils.js";
 
       const EARTH_TEXTURE_URL = "./assets/earth_atmos_2048.jpg";
       const COUNTRY_DATA_URL = "./assets/countries.geo.json";
@@ -412,28 +413,12 @@
           return response.json();
         })
         .then((data) => {
-          if (!Array.isArray(data.features)) {
-            throw new Error("GeoJSON invàlid");
-          }
-
-          countryFeatures = data.features.filter(({ geometry, properties }) =>
-            (geometry?.type === "Polygon" || geometry?.type === "MultiPolygon") &&
-            typeof properties?.name === "string" &&
-            properties.name.trim() !== "",
-          );
-          countryFeaturesByName = countryFeatures.reduce((groups, feature) => {
-            const name = feature.properties.name;
-            const currentGroup = groups.get(name) ?? [];
-            currentGroup.push(feature);
-            groups.set(name, currentGroup);
-            return groups;
-          }, new Map());
+          const preparedCountryData = prepareCountryData(data);
+          countryFeatures = preparedCountryData.countryFeatures;
+          countryFeaturesByName = preparedCountryData.countryFeaturesByName;
 
           countrySelect.disabled = false;
-          setCountrySelectOptions(
-            [...countryFeaturesByName.keys()].sort((left, right) => left.localeCompare(right, "ca")),
-            "Tria un país...",
-          );
+          setCountrySelectOptions(preparedCountryData.countryNames, "Tria un país...");
 
           updateCountrySelection("");
         })
@@ -473,7 +458,7 @@
         }
 
         const intersection = getGlobeIntersection(event);
-        if (pointerDownPosition) {
+        if (pointerDownPosition && pointerDownOnEarth) {
           renderer.domElement.style.cursor = "grabbing";
         } else {
           renderer.domElement.style.cursor = intersection ? "pointer" : "grab";
