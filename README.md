@@ -1,6 +1,6 @@
 # Test2
 
-Pàgina estàtica per publicar a GitHub Pages amb un mapa mundi fet amb Three.js.
+Pàgina estàtica per publicar a GitHub Pages amb un globus terraqüi interactiu fet amb Three.js i una textura realista de la Terra.
 
 ## Publicació
 
