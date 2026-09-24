@@ -450,9 +450,10 @@
           return;
         }
 
+        const canvasRect = renderer.domElement.getBoundingClientRect();
         mapCountryTag.hidden = false;
-        mapCountryTag.style.left = `${(projectedPoint.x * 0.5 + 0.5) * renderer.domElement.clientWidth}px`;
-        mapCountryTag.style.top = `${(-projectedPoint.y * 0.5 + 0.5) * renderer.domElement.clientHeight}px`;
+        mapCountryTag.style.left = `${canvasRect.left + (projectedPoint.x * 0.5 + 0.5) * canvasRect.width}px`;
+        mapCountryTag.style.top = `${canvasRect.top + (-projectedPoint.y * 0.5 + 0.5) * canvasRect.height}px`;
       };
 
       const showMapCountryTag = (name, point) => {
