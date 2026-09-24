@@ -108,7 +108,8 @@
       <div class="hud">
         <h1 id="map-title">Planeta Terra interactiu</h1>
         <p id="map-help">
-          Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits i toca un país per veure'n el nom. Si uses teclat, fes servir la llista de països.
+          Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits i toca un país per veure'n el nom. Les
+          muntanyes principals apareixen marcades i amb relleu. Si uses teclat, fes servir la llista de països.
         </p>
         <label class="sr-only" for="country-select">Selecciona un país</label>
         <select id="country-select" class="country-picker" disabled>
@@ -117,9 +118,10 @@
         <p id="country-name" class="country-label" aria-live="polite" aria-atomic="true">Carregant països...</p>
       </div>
       <p id="map-description" class="sr-only">
-        Visualització interactiva del planeta Terra amb una textura d'alta qualitat, les fronteres dels països
-        superposades i selecció del nom del país quan s'hi fa clic.
+        Visualització interactiva del planeta Terra amb una textura d'alta qualitat, relleu de les muntanyes, les
+        fronteres dels països superposades i selecció del nom del país quan s'hi fa clic.
       </p>
+      <p id="mountain-description" class="sr-only">Carregant les muntanyes principals representades.</p>
       <p id="map-country-tag" class="map-country-tag" hidden aria-hidden="true"></p>
     </div>
 
@@ -137,12 +139,22 @@
       import { prepareCountryData } from "./globe-country-utils.js";
 
       const EARTH_TEXTURE_URL = "./assets/earth_atmos_2048.jpg";
+      const EARTH_NORMAL_TEXTURE_URL = "./assets/earth_normal_2048.jpg";
       const COUNTRY_DATA_URL = "./assets/countries.geo.json";
       const COUNTRY_CANVAS_WIDTH = 4096;
       const COUNTRY_CANVAS_HEIGHT = 2048;
+      const MAJOR_MOUNTAINS = [
+        { name: "Everest", lat: 27.9881, lon: 86.925 },
+        { name: "Aconcagua", lat: -32.6532, lon: -70.0109 },
+        { name: "Denali", lat: 63.0695, lon: -151.0074 },
+        { name: "Kilimanjaro", lat: -3.0674, lon: 37.3556 },
+        { name: "Mont Blanc", lat: 45.8326, lon: 6.8652 },
+        { name: "Elbrús", lat: 43.3499, lon: 42.4453 },
+      ];
 
       const app = document.querySelector("#app");
       const mapHelp = document.querySelector("#map-help");
+      const mountainDescription = document.querySelector("#mountain-description");
       const countrySelect = document.querySelector("#country-select");
       const countryName = document.querySelector("#country-name");
       const mapCountryTag = document.querySelector("#map-country-tag");
@@ -153,7 +165,7 @@
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.domElement.setAttribute("role", "img");
       renderer.domElement.setAttribute("aria-labelledby", "map-title map-description");
-      renderer.domElement.setAttribute("aria-describedby", "map-help");
+      renderer.domElement.setAttribute("aria-describedby", "map-help mountain-description");
       app.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
@@ -217,8 +229,9 @@
         new THREE.SphereGeometry(2.4, 96, 96),
         new THREE.MeshStandardMaterial({
           color: 0x4b85b8,
-          roughness: 0.95,
+          roughness: 0.9,
           metalness: 0,
+          normalScale: new THREE.Vector2(0.45, 0.45),
         }),
       );
       earthGroup.add(earth);
@@ -254,6 +267,23 @@
       );
       earthGroup.add(atmosphere);
 
+      const mountainGroup = new THREE.Group();
+      earthGroup.add(mountainGroup);
+      const mountainMarkerGeometry = new THREE.SphereGeometry(0.03, 14, 14);
+      const mountainMarkerMaterial = new THREE.MeshStandardMaterial({
+        color: 0xfff0c0,
+        emissive: 0xffb95d,
+        emissiveIntensity: 0.75,
+        roughness: 0.25,
+        metalness: 0,
+      });
+      MAJOR_MOUNTAINS.forEach((mountain) => {
+        const marker = new THREE.Mesh(mountainMarkerGeometry, mountainMarkerMaterial);
+        marker.position.copy(latLonToVector3(mountain.lat, mountain.lon, 2.43));
+        mountainGroup.add(marker);
+      });
+      mountainDescription.textContent = `Muntanyes principals representades: ${MAJOR_MOUNTAINS.map((mountain) => mountain.name).join(", ")}.`;
+
       const loader = new THREE.TextureLoader();
       loader.load(
         EARTH_TEXTURE_URL,
@@ -266,6 +296,18 @@
         () => {
           mapHelp.textContent = "Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits. La textura principal de la Terra no s'ha pogut carregar.";
           countryName.textContent = "La textura principal de la Terra no s'ha pogut carregar, però la llista de països continua disponible.";
+        },
+      );
+      loader.load(
+        EARTH_NORMAL_TEXTURE_URL,
+        (texture) => {
+          texture.colorSpace = THREE.NoColorSpace;
+          earth.material.normalMap = texture;
+          earth.material.needsUpdate = true;
+        },
+        undefined,
+        () => {
+          console.warn("No s'ha pogut carregar la textura de relleu de muntanyes.");
         },
       );
 
@@ -284,6 +326,15 @@
 
       const lonToX = (lon) => ((lon + 180) / 360) * COUNTRY_CANVAS_WIDTH;
       const latToY = (lat) => ((90 - lat) / 180) * COUNTRY_CANVAS_HEIGHT;
+      function latLonToVector3(lat, lon, radius) {
+        const phi = THREE.MathUtils.degToRad(90 - lat);
+        const theta = THREE.MathUtils.degToRad(lon + 180);
+        return new THREE.Vector3(
+          -radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.cos(phi),
+          radius * Math.sin(phi) * Math.sin(theta),
+        );
+      }
 
       const traceRing = (context, ring) => {
         for (const wrapOffset of [-COUNTRY_CANVAS_WIDTH, 0, COUNTRY_CANVAS_WIDTH]) {
