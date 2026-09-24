@@ -350,13 +350,13 @@
       const createReliefTextureFromMap = (texture) => {
         const source = texture.image;
         const canvas = document.createElement("canvas");
-        canvas.width = source.width;
-        canvas.height = source.height;
+        canvas.width = Math.max(1024, Math.floor(source.width / 2));
+        canvas.height = Math.max(512, Math.floor(source.height / 2));
         const context = canvas.getContext("2d");
         if (!context) {
           return null;
         }
-        context.drawImage(source, 0, 0);
+        context.drawImage(source, 0, 0, canvas.width, canvas.height);
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         const pixels = imageData.data;
         for (let index = 0; index < pixels.length; index += 4) {
