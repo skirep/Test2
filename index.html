@@ -81,9 +81,17 @@
       </p>
     </div>
 
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
+        }
+      }
+    </script>
     <script type="module">
-      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js";
-      import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/controls/OrbitControls.js";
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
       const app = document.querySelector("#app");
       const description = document.querySelector("#map-description");
