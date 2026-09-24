@@ -382,7 +382,9 @@
             throw new Error("GeoJSON invàlid");
           }
 
-          countryFeatures = data.features;
+          countryFeatures = data.features.filter(({ geometry }) =>
+            geometry?.type === "Polygon" || geometry?.type === "MultiPolygon",
+          );
           updateCountrySelection(null);
         })
         .catch(() => {
@@ -439,11 +441,15 @@
         updateCountrySelection(findCountryByCoordinates(lon, lat));
       });
 
-      renderer.domElement.addEventListener("pointerleave", () => {
-        if (!pointerDownPosition) {
-          renderer.domElement.style.cursor = "grab";
-        }
-      });
+      const resetPointerState = () => {
+        pointerDownPosition = null;
+        pointerDownOnEarth = false;
+        pointerMoved = false;
+        renderer.domElement.style.cursor = "grab";
+      };
+
+      renderer.domElement.addEventListener("pointerleave", resetPointerState);
+      renderer.domElement.addEventListener("pointercancel", resetPointerState);
 
       const resize = () => {
         camera.aspect = window.innerWidth / window.innerHeight;
