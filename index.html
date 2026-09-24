@@ -110,7 +110,6 @@
       const COUNTRY_CANVAS_HEIGHT = 2048;
 
       const app = document.querySelector("#app");
-      const description = document.querySelector("#map-description");
       const countryName = document.querySelector("#country-name");
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -376,7 +375,6 @@
         })
         .then((data) => {
           countryFeatures = data.features;
-          drawCountryOverlay();
           updateCountrySelection(null);
         })
         .catch(() => {
