@@ -209,6 +209,10 @@
       countryCanvas.width = COUNTRY_CANVAS_WIDTH;
       countryCanvas.height = COUNTRY_CANVAS_HEIGHT;
       const countryContext = countryCanvas.getContext("2d");
+      if (!countryContext) {
+        throw new Error("No s'ha pogut inicialitzar el canvas dels països.");
+      }
+
       const countryTexture = new THREE.CanvasTexture(countryCanvas);
       countryTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -474,7 +478,7 @@
         const hitGlobeSurface = intersection?.object === earth || intersection?.object === countryOverlay;
         const shouldSelect = !pointerMoved && pointerDownOnEarth && hitGlobeSurface && Boolean(intersection?.uv);
 
-        releasePointerCapture(event.pointerId);
+        releaseCapturedPointer(event.pointerId);
         pointerDownPosition = null;
         pointerDownOnEarth = false;
         pointerMoved = false;
@@ -489,14 +493,14 @@
         updateCountrySelection(findCountryByCoordinates(lon, lat)?.properties.name ?? "");
       });
 
-      function releasePointerCapture(pointerId) {
+      function releaseCapturedPointer(pointerId) {
         if (pointerId !== undefined && renderer.domElement.hasPointerCapture(pointerId)) {
           renderer.domElement.releasePointerCapture(pointerId);
         }
       }
 
       function resetPointerState(pointerId) {
-        releasePointerCapture(pointerId);
+        releaseCapturedPointer(pointerId);
         pointerDownPosition = null;
         pointerDownOnEarth = false;
         pointerMoved = false;
