@@ -368,6 +368,10 @@
         context.putImageData(imageData, 0, 0);
         const reliefTexture = new THREE.CanvasTexture(canvas);
         reliefTexture.colorSpace = THREE.NoColorSpace;
+        reliefTexture.wrapS = THREE.RepeatWrapping;
+        reliefTexture.wrapT = THREE.ClampToEdgeWrapping;
+        reliefTexture.magFilter = texture.magFilter;
+        reliefTexture.minFilter = texture.minFilter;
         return reliefTexture;
       };
 
