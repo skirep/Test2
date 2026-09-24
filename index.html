@@ -98,7 +98,7 @@
         <select id="country-select" class="country-picker" disabled>
           <option value="">Carregant països...</option>
         </select>
-        <p id="country-name" class="country-label">Carregant països...</p>
+        <p id="country-name" class="country-label" aria-live="polite" aria-atomic="true">Carregant països...</p>
       </div>
       <p id="map-description" class="sr-only">
         Visualització interactiva del planeta Terra amb una textura d'alta qualitat, les fronteres dels països
@@ -249,7 +249,8 @@
       const raycaster = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
       let countryFeatures = [];
-      let selectedCountry = null;
+      let countryFeaturesByName = new Map();
+      let selectedCountryName = "";
       let pointerDownPosition = null;
       let pointerDownOnEarth = false;
       let pointerMoved = false;
@@ -287,13 +288,17 @@
         countryContext.lineJoin = "round";
         countryContext.lineCap = "round";
 
-        if (selectedCountry) {
+        const selectedFeatures = countryFeaturesByName.get(selectedCountryName) ?? [];
+
+        if (selectedFeatures.length > 0) {
           countryContext.beginPath();
-          if (selectedCountry.geometry.type === "Polygon") {
-            tracePolygon(countryContext, selectedCountry.geometry.coordinates);
-          } else if (selectedCountry.geometry.type === "MultiPolygon") {
-            selectedCountry.geometry.coordinates.forEach((polygon) => tracePolygon(countryContext, polygon));
-          }
+          selectedFeatures.forEach((feature) => {
+            if (feature.geometry.type === "Polygon") {
+              tracePolygon(countryContext, feature.geometry.coordinates);
+            } else if (feature.geometry.type === "MultiPolygon") {
+              feature.geometry.coordinates.forEach((polygon) => tracePolygon(countryContext, polygon));
+            }
+          });
           countryContext.fillStyle = "rgba(255, 196, 0, 0.28)";
           countryContext.fill("evenodd");
           countryContext.strokeStyle = "rgba(255, 220, 120, 0.95)";
@@ -384,16 +389,16 @@
         });
       };
 
-      const syncCountrySelect = (feature) => {
-        countrySelect.value = feature?.properties.name ?? "";
+      const syncCountrySelect = (name) => {
+        countrySelect.value = name;
       };
 
-      const updateCountrySelection = (feature) => {
-        selectedCountry = feature;
-        syncCountrySelect(feature);
+      const updateCountrySelection = (name) => {
+        selectedCountryName = name;
+        syncCountrySelect(name);
 
-        if (feature) {
-          countryName.textContent = `País seleccionat: ${feature.properties.name}`;
+        if (name) {
+          countryName.textContent = `País seleccionat: ${name}`;
         } else {
           countryName.textContent = "Toca un país o tria'n un de la llista per veure'n el nom.";
         }
@@ -415,16 +420,21 @@
           countryFeatures = data.features.filter(({ geometry }) =>
             geometry?.type === "Polygon" || geometry?.type === "MultiPolygon",
           );
+          countryFeaturesByName = countryFeatures.reduce((groups, feature) => {
+            const name = feature.properties.name;
+            const currentGroup = groups.get(name) ?? [];
+            currentGroup.push(feature);
+            groups.set(name, currentGroup);
+            return groups;
+          }, new Map());
 
           countrySelect.disabled = false;
           setCountrySelectOptions(
-            countryFeatures
-              .map((feature) => feature.properties.name)
-              .sort((left, right) => left.localeCompare(right, "ca")),
+            [...countryFeaturesByName.keys()].sort((left, right) => left.localeCompare(right, "ca")),
             "Tria un país...",
           );
 
-          updateCountrySelection(null);
+          updateCountrySelection("");
         })
         .catch(() => {
           setCountrySelectOptions([], "No s'han pogut carregar els països");
@@ -434,8 +444,7 @@
         });
 
       countrySelect.addEventListener("change", () => {
-        const feature = countryFeatures.find(({ properties }) => properties.name === countrySelect.value) ?? null;
-        updateCountrySelection(feature);
+        updateCountrySelection(countrySelect.value);
       });
 
       const getEarthIntersection = (event) => {
@@ -484,7 +493,7 @@
 
         const lon = intersection.uv.x * 360 - 180;
         const lat = 90 - intersection.uv.y * 180;
-        updateCountrySelection(findCountryByCoordinates(lon, lat));
+        updateCountrySelection(findCountryByCoordinates(lon, lat)?.properties.name ?? "");
       });
 
       const resetPointerState = () => {
