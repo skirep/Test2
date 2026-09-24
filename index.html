@@ -106,6 +106,7 @@
         fronteres dels països superposades i selecció del nom del país quan s'hi fa clic.
       </p>
       <p id="mountain-description" class="sr-only">Carregant les muntanyes principals representades.</p>
+      <ul id="mountain-list" class="sr-only" aria-label="Llista de muntanyes principals"></ul>
     </div>
 
     <script type="importmap">
@@ -122,7 +123,6 @@
       import { prepareCountryData } from "./globe-country-utils.js";
 
       const EARTH_TEXTURE_URL = "./assets/earth_atmos_2048.jpg";
-      const EARTH_BUMP_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/textures/planets/earth_normal_2048.jpg";
       const COUNTRY_DATA_URL = "./assets/countries.geo.json";
       const COUNTRY_CANVAS_WIDTH = 4096;
       const COUNTRY_CANVAS_HEIGHT = 2048;
@@ -138,6 +138,7 @@
       const app = document.querySelector("#app");
       const mapHelp = document.querySelector("#map-help");
       const mountainDescription = document.querySelector("#mountain-description");
+      const mountainList = document.querySelector("#mountain-list");
       const countrySelect = document.querySelector("#country-select");
       const countryName = document.querySelector("#country-name");
 
@@ -147,7 +148,7 @@
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.domElement.setAttribute("role", "img");
       renderer.domElement.setAttribute("aria-labelledby", "map-title map-description");
-      renderer.domElement.setAttribute("aria-describedby", "map-help mountain-description");
+      renderer.domElement.setAttribute("aria-describedby", "map-help mountain-description mountain-list");
       app.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
@@ -213,7 +214,7 @@
           color: 0x4b85b8,
           roughness: 0.9,
           metalness: 0,
-          normalScale: new THREE.Vector2(0.45, 0.45),
+          bumpScale: 0.15,
         }),
       );
       earthGroup.add(earth);
@@ -251,17 +252,16 @@
 
       const mountainGroup = new THREE.Group();
       earthGroup.add(mountainGroup);
+      const mountainMarkerGeometry = new THREE.SphereGeometry(0.03, 14, 14);
+      const mountainMarkerMaterial = new THREE.MeshStandardMaterial({
+        color: 0xfff0c0,
+        emissive: 0xffb95d,
+        emissiveIntensity: 0.75,
+        roughness: 0.25,
+        metalness: 0,
+      });
       MAJOR_MOUNTAINS.forEach((mountain) => {
-        const marker = new THREE.Mesh(
-          new THREE.SphereGeometry(0.03, 14, 14),
-          new THREE.MeshStandardMaterial({
-            color: 0xfff0c0,
-            emissive: 0xffb95d,
-            emissiveIntensity: 0.75,
-            roughness: 0.25,
-            metalness: 0,
-          }),
-        );
+        const marker = new THREE.Mesh(mountainMarkerGeometry, mountainMarkerMaterial);
         marker.position.copy(latLonToVector3(mountain.lat, mountain.lon, 2.43));
         mountainGroup.add(marker);
 
@@ -270,6 +270,13 @@
         mountainGroup.add(label);
       });
       mountainDescription.textContent = `Muntanyes principals representades: ${MAJOR_MOUNTAINS.map((mountain) => mountain.name).join(", ")}.`;
+      mountainList.replaceChildren(
+        ...MAJOR_MOUNTAINS.map((mountain) => {
+          const listItem = document.createElement("li");
+          listItem.textContent = mountain.name;
+          return listItem;
+        }),
+      );
 
       const loader = new THREE.TextureLoader();
       loader.load(
@@ -277,24 +284,16 @@
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
           earth.material.map = texture;
+          const reliefTexture = createReliefTextureFromMap(texture);
+          if (reliefTexture) {
+            earth.material.bumpMap = reliefTexture;
+          }
           earth.material.needsUpdate = true;
         },
         undefined,
         () => {
           mapHelp.textContent = "Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits. La textura principal de la Terra no s'ha pogut carregar.";
           countryName.textContent = "La textura principal de la Terra no s'ha pogut carregar, però la llista de països continua disponible.";
-        },
-      );
-
-      loader.load(
-        EARTH_BUMP_TEXTURE_URL,
-        (texture) => {
-          earth.material.normalMap = texture;
-          earth.material.needsUpdate = true;
-        },
-        undefined,
-        () => {
-          console.warn("No s'ha pogut carregar el mapa de relleu de la Terra.");
         },
       );
 
@@ -346,6 +345,30 @@
         const sprite = new THREE.Sprite(material);
         sprite.scale.set(1.25, 0.38, 1);
         return sprite;
+      };
+
+      const createReliefTextureFromMap = (texture) => {
+        const source = texture.image;
+        const canvas = document.createElement("canvas");
+        canvas.width = source.width;
+        canvas.height = source.height;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          return null;
+        }
+        context.drawImage(source, 0, 0);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
+        for (let index = 0; index < pixels.length; index += 4) {
+          const luminance = 0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2];
+          pixels[index] = luminance;
+          pixels[index + 1] = luminance;
+          pixels[index + 2] = luminance;
+        }
+        context.putImageData(imageData, 0, 0);
+        const reliefTexture = new THREE.CanvasTexture(canvas);
+        reliefTexture.colorSpace = THREE.NoColorSpace;
+        return reliefTexture;
       };
 
       const traceRing = (context, ring) => {
