@@ -449,17 +449,17 @@
         updateCountrySelection(countrySelect.value);
       });
 
-      const getEarthIntersection = (event) => {
+      const getGlobeIntersection = (event) => {
         const rect = renderer.domElement.getBoundingClientRect();
         pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
-        return raycaster.intersectObject(earth)[0] ?? null;
+        return raycaster.intersectObjects([countryOverlay, earth])[0] ?? null;
       };
 
       renderer.domElement.addEventListener("pointerdown", (event) => {
         pointerDownPosition = { x: event.clientX, y: event.clientY };
-        pointerDownOnEarth = Boolean(getEarthIntersection(event));
+        pointerDownOnEarth = Boolean(getGlobeIntersection(event)?.uv);
         pointerMoved = false;
         renderer.domElement.style.cursor = pointerDownOnEarth ? "grabbing" : "grab";
       });
@@ -472,7 +472,7 @@
           }
         }
 
-        const intersection = getEarthIntersection(event);
+        const intersection = getGlobeIntersection(event);
         if (pointerDownPosition) {
           renderer.domElement.style.cursor = "grabbing";
         } else {
@@ -481,7 +481,7 @@
       });
 
       renderer.domElement.addEventListener("pointerup", (event) => {
-        const intersection = getEarthIntersection(event);
+        const intersection = getGlobeIntersection(event);
         const shouldSelect = !pointerMoved && pointerDownOnEarth && Boolean(intersection?.uv);
 
         pointerDownPosition = null;
