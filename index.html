@@ -110,6 +110,7 @@
       const COUNTRY_CANVAS_HEIGHT = 2048;
 
       const app = document.querySelector("#app");
+      const mapHelp = document.querySelector("#map-help");
       const countryName = document.querySelector("#country-name");
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -225,7 +226,7 @@
         },
         undefined,
         () => {
-          countryName.textContent = "No s'ha pogut carregar la textura de la Terra.";
+          mapHelp.textContent = "Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits. La textura principal de la Terra no s'ha pogut carregar.";
         },
       );
 
@@ -233,6 +234,8 @@
       const pointer = new THREE.Vector2();
       let countryFeatures = [];
       let selectedCountry = null;
+      let pointerDownPosition = null;
+      let pointerMoved = false;
 
       const lonToX = (lon) => ((lon + 180) / 360) * COUNTRY_CANVAS_WIDTH;
       const latToY = (lat) => ((90 - lat) / 180) * COUNTRY_CANVAS_HEIGHT;
@@ -389,24 +392,49 @@
         return raycaster.intersectObject(earth)[0] ?? null;
       };
 
-      renderer.domElement.addEventListener("pointermove", (event) => {
-        const intersection = getEarthIntersection(event);
-        renderer.domElement.style.cursor = intersection ? "pointer" : "grab";
+      renderer.domElement.addEventListener("pointerdown", (event) => {
+        pointerDownPosition = { x: event.clientX, y: event.clientY };
+        pointerMoved = false;
+        renderer.domElement.style.cursor = "grabbing";
       });
 
-      renderer.domElement.addEventListener("click", (event) => {
-        const intersection = getEarthIntersection(event);
-
-        if (!intersection?.uv || countryFeatures.length === 0) {
-          if (intersection) {
-            updateCountrySelection(null);
+      renderer.domElement.addEventListener("pointermove", (event) => {
+        if (pointerDownPosition) {
+          const movement = Math.hypot(event.clientX - pointerDownPosition.x, event.clientY - pointerDownPosition.y);
+          if (movement > 6) {
+            pointerMoved = true;
           }
+        }
+
+        const intersection = getEarthIntersection(event);
+        if (pointerDownPosition) {
+          renderer.domElement.style.cursor = "grabbing";
+        } else {
+          renderer.domElement.style.cursor = intersection ? "pointer" : "grab";
+        }
+      });
+
+      renderer.domElement.addEventListener("pointerup", (event) => {
+        const intersection = getEarthIntersection(event);
+        const shouldSelect = !pointerMoved;
+
+        pointerDownPosition = null;
+        pointerMoved = false;
+        renderer.domElement.style.cursor = intersection ? "pointer" : "grab";
+
+        if (!shouldSelect || !intersection?.uv || countryFeatures.length === 0) {
           return;
         }
 
         const lon = intersection.uv.x * 360 - 180;
         const lat = 90 - intersection.uv.y * 180;
         updateCountrySelection(findCountryByCoordinates(lon, lat));
+      });
+
+      renderer.domElement.addEventListener("pointerleave", () => {
+        if (!pointerDownPosition) {
+          renderer.domElement.style.cursor = "grab";
+        }
       });
 
       const resize = () => {
