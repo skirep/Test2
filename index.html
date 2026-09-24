@@ -271,6 +271,9 @@
 
       const raycaster = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
+      const globeCenterWorld = new THREE.Vector3();
+      const anchorFromCenter = new THREE.Vector3();
+      const cameraFromAnchor = new THREE.Vector3();
       let countryFeatures = [];
       let countryFeaturesByName = new Map();
       let selectedCountryName = "";
@@ -427,9 +430,11 @@
           return;
         }
 
-        const normal = selectedCountryAnchor.clone().normalize();
-        const cameraDirection = camera.position.clone().normalize();
-        const isFacingCamera = normal.dot(cameraDirection) > 0;
+        earth.getWorldPosition(globeCenterWorld);
+        const isFacingCamera =
+          anchorFromCenter.subVectors(selectedCountryAnchor, globeCenterWorld).normalize().dot(
+            cameraFromAnchor.subVectors(camera.position, selectedCountryAnchor).normalize(),
+          ) > 0;
 
         if (!isFacingCamera) {
           mapCountryTag.hidden = true;
@@ -450,10 +455,11 @@
           return;
         }
 
+        const appRect = app.getBoundingClientRect();
         const canvasRect = renderer.domElement.getBoundingClientRect();
         mapCountryTag.hidden = false;
-        mapCountryTag.style.left = `${canvasRect.left + (projectedPoint.x * 0.5 + 0.5) * canvasRect.width}px`;
-        mapCountryTag.style.top = `${canvasRect.top + (-projectedPoint.y * 0.5 + 0.5) * canvasRect.height}px`;
+        mapCountryTag.style.left = `${canvasRect.left - appRect.left + (projectedPoint.x * 0.5 + 0.5) * canvasRect.width}px`;
+        mapCountryTag.style.top = `${canvasRect.top - appRect.top + (-projectedPoint.y * 0.5 + 0.5) * canvasRect.height}px`;
       };
 
       const showMapCountryTag = (name, point) => {
