@@ -86,6 +86,7 @@
       import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/controls/OrbitControls.js";
 
       const app = document.querySelector("#app");
+      const description = document.querySelector("#map-description");
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -183,6 +184,8 @@
         },
         undefined,
         () => {
+          description.textContent =
+            "Visualització interactiva del planeta Terra creada amb Three.js. Es pot girar arrossegant i ampliar amb la roda o amb dos dits al mòbil.";
           console.warn("No s'ha pogut carregar la textura realista de la Terra.");
         },
       );
