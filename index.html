@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ca">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mapa mundi amb Three.js</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        background: radial-gradient(circle at top, #19406f 0%, #06111f 65%);
+        color: #f3f7fb;
+      }
+
+      #app {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .hud {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1;
+        max-width: min(24rem, calc(100vw - 2rem));
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 1rem;
+        background: rgba(8, 20, 36, 0.72);
+        backdrop-filter: blur(8px);
+      }
+
+      .hud h1 {
+        margin: 0 0 0.35rem;
+        font-size: clamp(1.2rem, 2vw, 1.7rem);
+      }
+
+      .hud p {
+        margin: 0;
+        line-height: 1.45;
+        font-size: 0.95rem;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      canvas {
+        display: block;
+        touch-action: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="hud">
+        <h1 id="map-title">Mapa mundi interactiu</h1>
+        <p id="map-help">Arrossega per moure el mapa i fes zoom amb la roda o amb dos dits al mòbil.</p>
+      </div>
+      <p id="map-description" class="sr-only">
+        Visualització interactiva d'un mapa mundi amb tots els continents creat amb Three.js.
+      </p>
+    </div>
+
+    <script type="module">
+      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js";
+      import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/controls/OrbitControls.js";
+
+      const app = document.querySelector("#app");
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.domElement.setAttribute("role", "img");
+      renderer.domElement.setAttribute("aria-labelledby", "map-title map-description");
+      renderer.domElement.setAttribute("aria-describedby", "map-help");
+      app.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+
+      const camera = new THREE.OrthographicCamera();
+      const cameraPosition = new THREE.Vector3(0, 0, 120);
+      camera.position.copy(cameraPosition);
+      camera.lookAt(0, 0, 0);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableRotate = false;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.zoomSpeed = 1;
+      controls.panSpeed = 0.8;
+      controls.minZoom = 0.8;
+      controls.maxZoom = 6;
+      controls.screenSpacePanning = true;
+      controls.touches.ONE = THREE.TOUCH.PAN;
+      controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+      controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+      controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+
+      const ambientLight = new THREE.AmbientLight(0xeaf4ff, 1.3);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+      directionalLight.position.set(20, 35, 60);
+      scene.add(directionalLight);
+
+      const ocean = new THREE.Mesh(
+        new THREE.PlaneGeometry(120, 60),
+        new THREE.MeshPhongMaterial({
+          color: 0x1f6aa5,
+          shininess: 70,
+          transparent: true,
+          opacity: 0.96,
+        }),
+      );
+      ocean.position.z = -2;
+      scene.add(ocean);
+
+      const graticuleMaterial = new THREE.LineBasicMaterial({
+        color: 0x81c8ff,
+        transparent: true,
+        opacity: 0.16,
+      });
+
+      for (let x = -60; x <= 60; x += 10) {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(x, -30, -1.8),
+          new THREE.Vector3(x, 30, -1.8),
+        ]);
+        scene.add(new THREE.Line(geometry, graticuleMaterial));
+      }
+
+      for (let y = -30; y <= 30; y += 10) {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-60, y, -1.8),
+          new THREE.Vector3(60, y, -1.8),
+        ]);
+        scene.add(new THREE.Line(geometry, graticuleMaterial));
+      }
+
+      const continents = [
+        {
+          name: "Amèrica del Nord",
+          points: [
+            [-52, 22],
+            [-56, 28],
+            [-49, 32],
+            [-42, 31],
+            [-37, 26],
+            [-35, 18],
+            [-32, 11],
+            [-35, 6],
+            [-42, 8],
+            [-46, 12],
+          ],
+        },
+        {
+          name: "Amèrica del Sud",
+          points: [
+            [-31, 4],
+            [-28, 0],
+            [-26, -6],
+            [-23, -14],
+            [-21, -22],
+            [-25, -28],
+            [-29, -24],
+            [-31, -16],
+            [-33, -9],
+            [-34, -1],
+          ],
+        },
+        {
+          name: "Europa",
+          points: [
+            [3, 22],
+            [8, 26],
+            [14, 24],
+            [17, 19],
+            [15, 14],
+            [10, 12],
+            [5, 15],
+          ],
+        },
+        {
+          name: "Àfrica",
+          points: [
+            [6, 12],
+            [13, 10],
+            [18, 5],
+            [19, -4],
+            [16, -14],
+            [11, -21],
+            [5, -16],
+            [3, -7],
+            [4, 3],
+          ],
+        },
+        {
+          name: "Àsia",
+          points: [
+            [15, 21],
+            [24, 27],
+            [36, 26],
+            [47, 20],
+            [49, 13],
+            [44, 7],
+            [38, 4],
+            [31, 7],
+            [25, 4],
+            [22, 9],
+            [18, 14],
+          ],
+        },
+        {
+          name: "Oceania",
+          points: [
+            [38, -12],
+            [46, -11],
+            [50, -16],
+            [48, -22],
+            [41, -24],
+            [36, -19],
+          ],
+        },
+        {
+          name: "Antàrtida",
+          points: [
+            [-58, -25],
+            [-44, -27],
+            [-27, -28],
+            [-9, -29],
+            [10, -29],
+            [28, -28],
+            [44, -27],
+            [58, -25],
+            [58, -30],
+            [-58, -30],
+          ],
+        },
+      ];
+
+      const continentMaterial = new THREE.MeshStandardMaterial({
+        color: 0x84d17f,
+        roughness: 0.82,
+        metalness: 0.08,
+      });
+
+      const coastMaterial = new THREE.LineBasicMaterial({ color: 0xe8f6de });
+
+      const continentGroup = new THREE.Group();
+
+      for (const continent of continents) {
+        const shape = new THREE.Shape();
+        continent.points.forEach(([x, y], index) => {
+          if (index === 0) {
+            shape.moveTo(x, y);
+            return;
+          }
+          shape.lineTo(x, y);
+        });
+        shape.closePath();
+
+        const mesh = new THREE.Mesh(
+          new THREE.ExtrudeGeometry(shape, {
+            depth: 1.6,
+            bevelEnabled: false,
+          }),
+          continentMaterial,
+        );
+        mesh.position.z = -0.8;
+        continentGroup.add(mesh);
+
+        const coastPoints = continent.points.map(([x, y]) => new THREE.Vector3(x, y, 1));
+        coastPoints.push(new THREE.Vector3(continent.points[0][0], continent.points[0][1], 1));
+        const coastline = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(coastPoints),
+          coastMaterial,
+        );
+        continentGroup.add(coastline);
+      }
+
+      scene.add(continentGroup);
+
+      const resize = () => {
+        const aspect = window.innerWidth / window.innerHeight;
+        const frustumHeight = 70;
+        camera.left = (-frustumHeight * aspect) / 2;
+        camera.right = (frustumHeight * aspect) / 2;
+        camera.top = frustumHeight / 2;
+        camera.bottom = -frustumHeight / 2;
+        camera.near = 0.1;
+        camera.far = 250;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      };
+
+      window.addEventListener("resize", resize);
+      resize();
+
+      const tick = () => {
+        controls.update();
+        renderer.render(scene, camera);
+        window.requestAnimationFrame(tick);
+      };
+
+      tick();
+    </script>
+  </body>
+</html>
