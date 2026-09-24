@@ -243,6 +243,7 @@
         undefined,
         () => {
           mapHelp.textContent = "Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits. La textura principal de la Terra no s'ha pogut carregar.";
+          countryName.textContent = "La textura principal de la Terra no s'ha pogut carregar, però la llista de països continua disponible.";
         },
       );
 
@@ -443,6 +444,7 @@
       };
 
       renderer.domElement.addEventListener("pointerdown", (event) => {
+        renderer.domElement.setPointerCapture(event.pointerId);
         pointerDownPosition = { x: event.clientX, y: event.clientY };
         pointerDownOnEarth = Boolean(getGlobeIntersection(event)?.uv);
         pointerMoved = false;
@@ -470,6 +472,7 @@
         const hitGlobeSurface = intersection?.object === earth || intersection?.object === countryOverlay;
         const shouldSelect = !pointerMoved && pointerDownOnEarth && hitGlobeSurface && Boolean(intersection?.uv);
 
+        releasePointerCapture(event.pointerId);
         pointerDownPosition = null;
         pointerDownOnEarth = false;
         pointerMoved = false;
@@ -484,15 +487,26 @@
         updateCountrySelection(findCountryByCoordinates(lon, lat)?.properties.name ?? "");
       });
 
-      const resetPointerState = () => {
+      const releasePointerCapture = (pointerId) => {
+        if (pointerId !== undefined && renderer.domElement.hasPointerCapture(pointerId)) {
+          renderer.domElement.releasePointerCapture(pointerId);
+        }
+      };
+
+      const resetPointerState = (pointerId) => {
+        releasePointerCapture(pointerId);
         pointerDownPosition = null;
         pointerDownOnEarth = false;
         pointerMoved = false;
         renderer.domElement.style.cursor = "grab";
       };
 
-      renderer.domElement.addEventListener("pointerleave", resetPointerState);
-      renderer.domElement.addEventListener("pointercancel", resetPointerState);
+      renderer.domElement.addEventListener("pointerleave", () => {
+        if (!pointerDownPosition) {
+          renderer.domElement.style.cursor = "grab";
+        }
+      });
+      renderer.domElement.addEventListener("pointercancel", (event) => resetPointerState(event.pointerId));
 
       const resize = () => {
         camera.aspect = window.innerWidth / window.innerHeight;
