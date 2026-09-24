@@ -444,9 +444,11 @@
       };
 
       renderer.domElement.addEventListener("pointerdown", (event) => {
-        renderer.domElement.setPointerCapture(event.pointerId);
         pointerDownPosition = { x: event.clientX, y: event.clientY };
         pointerDownOnEarth = Boolean(getGlobeIntersection(event)?.uv);
+        if (pointerDownOnEarth) {
+          renderer.domElement.setPointerCapture(event.pointerId);
+        }
         pointerMoved = false;
         renderer.domElement.style.cursor = pointerDownOnEarth ? "grabbing" : "grab";
       });
@@ -487,19 +489,19 @@
         updateCountrySelection(findCountryByCoordinates(lon, lat)?.properties.name ?? "");
       });
 
-      const releasePointerCapture = (pointerId) => {
+      function releasePointerCapture(pointerId) {
         if (pointerId !== undefined && renderer.domElement.hasPointerCapture(pointerId)) {
           renderer.domElement.releasePointerCapture(pointerId);
         }
-      };
+      }
 
-      const resetPointerState = (pointerId) => {
+      function resetPointerState(pointerId) {
         releasePointerCapture(pointerId);
         pointerDownPosition = null;
         pointerDownOnEarth = false;
         pointerMoved = false;
         renderer.domElement.style.cursor = "grab";
-      };
+      }
 
       renderer.domElement.addEventListener("pointerleave", () => {
         if (!pointerDownPosition) {

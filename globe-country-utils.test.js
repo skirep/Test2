@@ -68,3 +68,18 @@ test("prepareCountryData groups duplicate country names and sorts them", () => {
 test("prepareCountryData rejects invalid GeoJSON payloads", () => {
   assert.throws(() => prepareCountryData({ type: "FeatureCollection" }), /GeoJSON invàlid/);
 });
+
+
+test("prepareCountryData respects an overridden locale for sorting", () => {
+  const { countryNames } = prepareCountryData(
+    {
+      features: [
+        { geometry: { type: "Polygon", coordinates: [] }, properties: { name: "Österreich" } },
+        { geometry: { type: "Polygon", coordinates: [] }, properties: { name: "Zulu" } },
+      ],
+    },
+    "sv",
+  );
+
+  assert.deepEqual(countryNames, ["Zulu", "Österreich"]);
+});
