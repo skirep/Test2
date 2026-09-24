@@ -92,7 +92,7 @@
       <div class="hud">
         <h1 id="map-title">Planeta Terra interactiu</h1>
         <p id="map-help">
-          Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits i toca un país per veure'n el nom.
+          Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits i toca un país per veure'n el nom. Si uses teclat, fes servir la llista de països.
         </p>
         <label class="sr-only" for="country-select">Selecciona un país</label>
         <select id="country-select" class="country-picker" disabled>
@@ -435,7 +435,8 @@
 
           updateCountrySelection("");
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error("Error carregant els països:", error);
           setCountrySelectOptions([], "No s'han pogut carregar els països");
           countrySelect.disabled = true;
           countryName.textContent = "No s'han pogut carregar els països.";
