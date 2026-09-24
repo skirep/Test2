@@ -105,6 +105,7 @@
         Visualització interactiva del planeta Terra amb una textura d'alta qualitat, relleu de les muntanyes, les
         fronteres dels països superposades i selecció del nom del país quan s'hi fa clic.
       </p>
+      <p id="mountain-description" class="sr-only">Carregant les muntanyes principals representades.</p>
     </div>
 
     <script type="importmap">
@@ -136,6 +137,7 @@
 
       const app = document.querySelector("#app");
       const mapHelp = document.querySelector("#map-help");
+      const mountainDescription = document.querySelector("#mountain-description");
       const countrySelect = document.querySelector("#country-select");
       const countryName = document.querySelector("#country-name");
 
@@ -145,7 +147,7 @@
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.domElement.setAttribute("role", "img");
       renderer.domElement.setAttribute("aria-labelledby", "map-title map-description");
-      renderer.domElement.setAttribute("aria-describedby", "map-help");
+      renderer.domElement.setAttribute("aria-describedby", "map-help mountain-description");
       app.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
@@ -211,7 +213,7 @@
           color: 0x4b85b8,
           roughness: 0.9,
           metalness: 0,
-          bumpScale: 0.15,
+          normalScale: new THREE.Vector2(0.45, 0.45),
         }),
       );
       earthGroup.add(earth);
@@ -267,6 +269,7 @@
         label.position.copy(latLonToVector3(mountain.lat, mountain.lon, 2.55));
         mountainGroup.add(label);
       });
+      mountainDescription.textContent = `Muntanyes principals representades: ${MAJOR_MOUNTAINS.map((mountain) => mountain.name).join(", ")}.`;
 
       const loader = new THREE.TextureLoader();
       loader.load(
@@ -286,7 +289,7 @@
       loader.load(
         EARTH_BUMP_TEXTURE_URL,
         (texture) => {
-          earth.material.bumpMap = texture;
+          earth.material.normalMap = texture;
           earth.material.needsUpdate = true;
         },
         undefined,
