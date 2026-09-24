@@ -1,6 +1,6 @@
 # Test2
 
-Pàgina estàtica per publicar a GitHub Pages amb un globus terraqüi interactiu fet amb Three.js i una textura realista de la Terra.
+Pàgina estàtica per publicar a GitHub Pages amb un globus terraqüi interactiu fet amb Three.js, una textura de la Terra d'alta qualitat, les fronteres dels països superposades i selecció del nom del país en fer clic.
 
 ## Publicació
 
