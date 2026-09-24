@@ -378,6 +378,10 @@
           return response.json();
         })
         .then((data) => {
+          if (!Array.isArray(data.features)) {
+            throw new Error("GeoJSON invàlid");
+          }
+
           countryFeatures = data.features;
           updateCountrySelection(null);
         })
@@ -419,14 +423,14 @@
 
       renderer.domElement.addEventListener("pointerup", (event) => {
         const intersection = getEarthIntersection(event);
-        const shouldSelect = !pointerMoved && pointerDownOnEarth;
+        const shouldSelect = !pointerMoved && pointerDownOnEarth && Boolean(intersection?.uv);
 
         pointerDownPosition = null;
         pointerDownOnEarth = false;
         pointerMoved = false;
         renderer.domElement.style.cursor = intersection ? "pointer" : "grab";
 
-        if (!shouldSelect || !intersection?.uv || countryFeatures.length === 0) {
+        if (!shouldSelect || countryFeatures.length === 0) {
           return;
         }
 
