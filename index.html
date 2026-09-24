@@ -356,16 +356,21 @@
         if (!context) {
           return null;
         }
-        context.drawImage(source, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const pixels = imageData.data;
-        for (let index = 0; index < pixels.length; index += 4) {
-          const luminance = 0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2];
-          pixels[index] = luminance;
-          pixels[index + 1] = luminance;
-          pixels[index + 2] = luminance;
+        try {
+          context.drawImage(source, 0, 0, canvas.width, canvas.height);
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          const pixels = imageData.data;
+          for (let index = 0; index < pixels.length; index += 4) {
+            const luminance = 0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2];
+            pixels[index] = luminance;
+            pixels[index + 1] = luminance;
+            pixels[index + 2] = luminance;
+          }
+          context.putImageData(imageData, 0, 0);
+        } catch (error) {
+          console.warn("No s'ha pogut generar el relleu de muntanyes a partir de la textura.", error);
+          return null;
         }
-        context.putImageData(imageData, 0, 0);
         const reliefTexture = new THREE.CanvasTexture(canvas);
         reliefTexture.colorSpace = THREE.NoColorSpace;
         reliefTexture.wrapS = THREE.RepeatWrapping;
