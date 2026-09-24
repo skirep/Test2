@@ -69,6 +69,22 @@
         font-weight: 700;
       }
 
+      .map-country-tag {
+        position: absolute;
+        z-index: 1;
+        max-width: min(16rem, 45vw);
+        padding: 0.35rem 0.55rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 999px;
+        background: rgba(8, 20, 36, 0.88);
+        color: #ffe082;
+        font-size: 0.9rem;
+        font-weight: 700;
+        white-space: nowrap;
+        pointer-events: none;
+        transform: translate(-50%, -120%);
+      }
+
       .sr-only {
         position: absolute;
         width: 1px;
@@ -104,6 +120,7 @@
         Visualització interactiva del planeta Terra amb una textura d'alta qualitat, les fronteres dels països
         superposades i selecció del nom del país quan s'hi fa clic.
       </p>
+      <p id="map-country-tag" class="map-country-tag" hidden aria-hidden="true"></p>
     </div>
 
     <script type="importmap">
@@ -128,6 +145,7 @@
       const mapHelp = document.querySelector("#map-help");
       const countrySelect = document.querySelector("#country-select");
       const countryName = document.querySelector("#country-name");
+      const mapCountryTag = document.querySelector("#map-country-tag");
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -256,6 +274,7 @@
       let countryFeatures = [];
       let countryFeaturesByName = new Map();
       let selectedCountryName = "";
+      let selectedCountryAnchor = null;
       let pointerDownPosition = null;
       let pointerDownOnEarth = false;
       let pointerMoved = false;
@@ -398,14 +417,65 @@
         countrySelect.value = name;
       };
 
-      const updateCountrySelection = (name) => {
+      const hideMapCountryTag = () => {
+        selectedCountryAnchor = null;
+        mapCountryTag.hidden = true;
+      };
+
+      const updateMapCountryTagPosition = () => {
+        if (!selectedCountryAnchor) {
+          return;
+        }
+
+        const normal = selectedCountryAnchor.clone().normalize();
+        const cameraDirection = camera.position.clone().normalize();
+        const isFacingCamera = normal.dot(cameraDirection) > 0;
+
+        if (!isFacingCamera) {
+          mapCountryTag.hidden = true;
+          return;
+        }
+
+        const projectedPoint = selectedCountryAnchor.clone().project(camera);
+        const isWithinClipSpace =
+          projectedPoint.x >= -1 &&
+          projectedPoint.x <= 1 &&
+          projectedPoint.y >= -1 &&
+          projectedPoint.y <= 1 &&
+          projectedPoint.z >= -1 &&
+          projectedPoint.z <= 1;
+
+        if (!isWithinClipSpace) {
+          mapCountryTag.hidden = true;
+          return;
+        }
+
+        mapCountryTag.hidden = false;
+        mapCountryTag.style.left = `${(projectedPoint.x * 0.5 + 0.5) * renderer.domElement.clientWidth}px`;
+        mapCountryTag.style.top = `${(-projectedPoint.y * 0.5 + 0.5) * renderer.domElement.clientHeight}px`;
+      };
+
+      const showMapCountryTag = (name, point) => {
+        if (!point) {
+          hideMapCountryTag();
+          return;
+        }
+
+        selectedCountryAnchor = point.clone();
+        mapCountryTag.textContent = name;
+        updateMapCountryTagPosition();
+      };
+
+      const updateCountrySelection = (name, point = null) => {
         selectedCountryName = name;
         syncCountrySelect(name);
 
         if (name) {
           countryName.textContent = `País seleccionat: ${name}`;
+          showMapCountryTag(name, point);
         } else {
           countryName.textContent = "Toca un país o tria'n un de la llista per veure'n el nom.";
+          hideMapCountryTag();
         }
         drawCountryOverlay();
       };
@@ -490,7 +560,8 @@
 
         const lon = intersection.uv.x * 360 - 180;
         const lat = 90 - intersection.uv.y * 180;
-        updateCountrySelection(findCountryByCoordinates(lon, lat)?.properties.name ?? "");
+        const selectedFeature = findCountryByCoordinates(lon, lat);
+        updateCountrySelection(selectedFeature?.properties.name ?? "", selectedFeature ? intersection.point : null);
       });
 
       function releaseCapturedPointer(pointerId) {
@@ -527,6 +598,7 @@
 
       const tick = () => {
         controls.update();
+        updateMapCountryTagPosition();
         stars.rotation.y += 0.0002;
         renderer.render(scene, camera);
         window.requestAnimationFrame(tick);
