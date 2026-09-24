@@ -417,7 +417,9 @@
           }
 
           countryFeatures = data.features.filter(({ geometry, properties }) =>
-            (geometry?.type === "Polygon" || geometry?.type === "MultiPolygon") && Boolean(properties?.name),
+            (geometry?.type === "Polygon" || geometry?.type === "MultiPolygon") &&
+            typeof properties?.name === "string" &&
+            properties.name.trim() !== "",
           );
           countryFeaturesByName = countryFeatures.reduce((groups, feature) => {
             const name = feature.properties.name;
@@ -459,7 +461,7 @@
         pointerDownPosition = { x: event.clientX, y: event.clientY };
         pointerDownOnEarth = Boolean(getEarthIntersection(event));
         pointerMoved = false;
-        renderer.domElement.style.cursor = "grabbing";
+        renderer.domElement.style.cursor = pointerDownOnEarth ? "grabbing" : "grab";
       });
 
       renderer.domElement.addEventListener("pointermove", (event) => {
