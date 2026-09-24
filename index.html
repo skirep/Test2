@@ -420,9 +420,13 @@
         countrySelect.value = name;
       };
 
-      const hideMapCountryTag = () => {
-        selectedCountryAnchor = null;
+      const hideMapCountryTagElement = () => {
         mapCountryTag.hidden = true;
+      };
+
+      const clearMapCountryTag = () => {
+        selectedCountryAnchor = null;
+        hideMapCountryTagElement();
       };
 
       const updateMapCountryTagPosition = () => {
@@ -431,13 +435,16 @@
         }
 
         earth.getWorldPosition(globeCenterWorld);
-        const isFacingCamera =
-          anchorFromCenter.subVectors(selectedCountryAnchor, globeCenterWorld).normalize().dot(
+        const facingDotProduct = anchorFromCenter
+          .subVectors(selectedCountryAnchor, globeCenterWorld)
+          .normalize()
+          .dot(
             cameraFromAnchor.subVectors(camera.position, selectedCountryAnchor).normalize(),
-          ) > 0;
+          );
+        const isBackFacing = facingDotProduct <= 0;
 
-        if (!isFacingCamera) {
-          mapCountryTag.hidden = true;
+        if (isBackFacing) {
+          hideMapCountryTagElement();
           return;
         }
 
@@ -451,7 +458,7 @@
           projectedPoint.z <= 1;
 
         if (!isWithinClipSpace) {
-          mapCountryTag.hidden = true;
+          hideMapCountryTagElement();
           return;
         }
 
@@ -464,7 +471,7 @@
 
       const showMapCountryTag = (name, point) => {
         if (!point) {
-          hideMapCountryTag();
+          clearMapCountryTag();
           return;
         }
 
@@ -482,7 +489,7 @@
           showMapCountryTag(name, point);
         } else {
           countryName.textContent = "Toca un país o tria'n un de la llista per veure'n el nom.";
-          hideMapCountryTag();
+          clearMapCountryTag();
         }
         drawCountryOverlay();
       };
