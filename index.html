@@ -52,6 +52,17 @@
         font-size: 0.95rem;
       }
 
+      .country-picker {
+        width: 100%;
+        margin-top: 0.75rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0.7rem;
+        background: rgba(5, 16, 28, 0.9);
+        color: inherit;
+        font: inherit;
+      }
+
       .country-label {
         margin-top: 0.65rem !important;
         color: #ffe082;
@@ -83,6 +94,10 @@
         <p id="map-help">
           Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits i toca un país per veure'n el nom.
         </p>
+        <label class="sr-only" for="country-select">Selecciona un país</label>
+        <select id="country-select" class="country-picker" disabled>
+          <option value="">Carregant països...</option>
+        </select>
         <p id="country-name" class="country-label">Carregant països...</p>
       </div>
       <p id="map-description" class="sr-only">
@@ -111,6 +126,7 @@
 
       const app = document.querySelector("#app");
       const mapHelp = document.querySelector("#map-help");
+      const countrySelect = document.querySelector("#country-select");
       const countryName = document.querySelector("#country-name");
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -360,12 +376,26 @@
           return false;
         }) ?? null;
 
+      const setCountrySelectOptions = (names, placeholder) => {
+        countrySelect.replaceChildren(new Option(placeholder, ""));
+
+        names.forEach((name) => {
+          countrySelect.add(new Option(name, name));
+        });
+      };
+
+      const syncCountrySelect = (feature) => {
+        countrySelect.value = feature?.properties.name ?? "";
+      };
+
       const updateCountrySelection = (feature) => {
         selectedCountry = feature;
+        syncCountrySelect(feature);
+
         if (feature) {
           countryName.textContent = `País seleccionat: ${feature.properties.name}`;
         } else {
-          countryName.textContent = "Toca un país per veure'n el nom.";
+          countryName.textContent = "Toca un país o tria'n un de la llista per veure'n el nom.";
         }
         drawCountryOverlay();
       };
@@ -385,12 +415,28 @@
           countryFeatures = data.features.filter(({ geometry }) =>
             geometry?.type === "Polygon" || geometry?.type === "MultiPolygon",
           );
+
+          countrySelect.disabled = false;
+          setCountrySelectOptions(
+            countryFeatures
+              .map((feature) => feature.properties.name)
+              .sort((left, right) => left.localeCompare(right, "ca")),
+            "Tria un país...",
+          );
+
           updateCountrySelection(null);
         })
         .catch(() => {
+          setCountrySelectOptions([], "No s'han pogut carregar els països");
+          countrySelect.disabled = true;
           countryName.textContent = "No s'han pogut carregar els països.";
           drawCountryOverlay();
         });
+
+      countrySelect.addEventListener("change", () => {
+        const feature = countryFeatures.find(({ properties }) => properties.name === countrySelect.value) ?? null;
+        updateCountrySelection(feature);
+      });
 
       const getEarthIntersection = (event) => {
         const rect = renderer.domElement.getBoundingClientRect();
