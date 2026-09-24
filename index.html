@@ -148,7 +148,7 @@
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.domElement.setAttribute("role", "img");
       renderer.domElement.setAttribute("aria-labelledby", "map-title map-description");
-      renderer.domElement.setAttribute("aria-describedby", "map-help mountain-description mountain-list");
+      renderer.domElement.setAttribute("aria-describedby", "map-help mountain-description");
       app.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
@@ -304,7 +304,7 @@
 
       const lonToX = (lon) => ((lon + 180) / 360) * COUNTRY_CANVAS_WIDTH;
       const latToY = (lat) => ((90 - lat) / 180) * COUNTRY_CANVAS_HEIGHT;
-      const latLonToVector3 = (lat, lon, radius) => {
+      function latLonToVector3(lat, lon, radius) {
         const phi = THREE.MathUtils.degToRad(90 - lat);
         const theta = THREE.MathUtils.degToRad(lon + 180);
         return new THREE.Vector3(
@@ -312,7 +312,7 @@
           radius * Math.cos(phi),
           radius * Math.sin(phi) * Math.sin(theta),
         );
-      };
+      }
 
       const createReliefTextureFromMap = (texture) => {
         const source = texture.image;
