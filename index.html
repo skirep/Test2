@@ -235,6 +235,7 @@
       let countryFeatures = [];
       let selectedCountry = null;
       let pointerDownPosition = null;
+      let pointerDownOnEarth = false;
       let pointerMoved = false;
 
       const lonToX = (lon) => ((lon + 180) / 360) * COUNTRY_CANVAS_WIDTH;
@@ -382,6 +383,7 @@
         })
         .catch(() => {
           countryName.textContent = "No s'han pogut carregar els països.";
+          drawCountryOverlay();
         });
 
       const getEarthIntersection = (event) => {
@@ -394,6 +396,7 @@
 
       renderer.domElement.addEventListener("pointerdown", (event) => {
         pointerDownPosition = { x: event.clientX, y: event.clientY };
+        pointerDownOnEarth = Boolean(getEarthIntersection(event));
         pointerMoved = false;
         renderer.domElement.style.cursor = "grabbing";
       });
@@ -416,9 +419,10 @@
 
       renderer.domElement.addEventListener("pointerup", (event) => {
         const intersection = getEarthIntersection(event);
-        const shouldSelect = !pointerMoved;
+        const shouldSelect = !pointerMoved && pointerDownOnEarth;
 
         pointerDownPosition = null;
+        pointerDownOnEarth = false;
         pointerMoved = false;
         renderer.domElement.style.cursor = intersection ? "pointer" : "grab";
 
