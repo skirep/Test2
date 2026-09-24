@@ -106,7 +106,6 @@
         fronteres dels països superposades i selecció del nom del país quan s'hi fa clic.
       </p>
       <p id="mountain-description" class="sr-only">Carregant les muntanyes principals representades.</p>
-      <ul id="mountain-list" class="sr-only" aria-label="Llista de muntanyes principals"></ul>
     </div>
 
     <script type="importmap">
@@ -123,6 +122,7 @@
       import { prepareCountryData } from "./globe-country-utils.js";
 
       const EARTH_TEXTURE_URL = "./assets/earth_atmos_2048.jpg";
+      const EARTH_NORMAL_TEXTURE_URL = "./assets/earth_normal_2048.jpg";
       const COUNTRY_DATA_URL = "./assets/countries.geo.json";
       const COUNTRY_CANVAS_WIDTH = 4096;
       const COUNTRY_CANVAS_HEIGHT = 2048;
@@ -138,7 +138,6 @@
       const app = document.querySelector("#app");
       const mapHelp = document.querySelector("#map-help");
       const mountainDescription = document.querySelector("#mountain-description");
-      const mountainList = document.querySelector("#mountain-list");
       const countrySelect = document.querySelector("#country-select");
       const countryName = document.querySelector("#country-name");
 
@@ -214,7 +213,7 @@
           color: 0x4b85b8,
           roughness: 0.9,
           metalness: 0,
-          bumpScale: 0.15,
+          normalScale: new THREE.Vector2(0.45, 0.45),
         }),
       );
       earthGroup.add(earth);
@@ -266,13 +265,6 @@
         mountainGroup.add(marker);
       });
       mountainDescription.textContent = `Muntanyes principals representades: ${MAJOR_MOUNTAINS.map((mountain) => mountain.name).join(", ")}.`;
-      mountainList.replaceChildren(
-        ...MAJOR_MOUNTAINS.map((mountain) => {
-          const listItem = document.createElement("li");
-          listItem.textContent = mountain.name;
-          return listItem;
-        }),
-      );
 
       const loader = new THREE.TextureLoader();
       loader.load(
@@ -280,16 +272,24 @@
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
           earth.material.map = texture;
-          const reliefTexture = createReliefTextureFromMap(texture);
-          if (reliefTexture) {
-            earth.material.bumpMap = reliefTexture;
-          }
           earth.material.needsUpdate = true;
         },
         undefined,
         () => {
           mapHelp.textContent = "Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits. La textura principal de la Terra no s'ha pogut carregar.";
           countryName.textContent = "La textura principal de la Terra no s'ha pogut carregar, però la llista de països continua disponible.";
+        },
+      );
+      loader.load(
+        EARTH_NORMAL_TEXTURE_URL,
+        (texture) => {
+          texture.colorSpace = THREE.NoColorSpace;
+          earth.material.normalMap = texture;
+          earth.material.needsUpdate = true;
+        },
+        undefined,
+        () => {
+          console.warn("No s'ha pogut carregar la textura de relleu de muntanyes.");
         },
       );
 
@@ -313,39 +313,6 @@
           radius * Math.sin(phi) * Math.sin(theta),
         );
       }
-
-      const createReliefTextureFromMap = (texture) => {
-        const source = texture.image;
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1024, Math.floor(source.width / 2));
-        canvas.height = Math.max(512, Math.floor(source.height / 2));
-        const context = canvas.getContext("2d");
-        if (!context) {
-          return null;
-        }
-        try {
-          context.drawImage(source, 0, 0, canvas.width, canvas.height);
-          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-          const pixels = imageData.data;
-          for (let index = 0; index < pixels.length; index += 4) {
-            const luminance = 0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2];
-            pixels[index] = luminance;
-            pixels[index + 1] = luminance;
-            pixels[index + 2] = luminance;
-          }
-          context.putImageData(imageData, 0, 0);
-        } catch (error) {
-          console.warn("No s'ha pogut generar el relleu de muntanyes a partir de la textura.", error);
-          return null;
-        }
-        const reliefTexture = new THREE.CanvasTexture(canvas);
-        reliefTexture.colorSpace = THREE.NoColorSpace;
-        reliefTexture.wrapS = THREE.RepeatWrapping;
-        reliefTexture.wrapT = THREE.ClampToEdgeWrapping;
-        reliefTexture.magFilter = texture.magFilter;
-        reliefTexture.minFilter = texture.minFilter;
-        return reliefTexture;
-      };
 
       const traceRing = (context, ring) => {
         for (const wrapOffset of [-COUNTRY_CANVAS_WIDTH, 0, COUNTRY_CANVAS_WIDTH]) {
