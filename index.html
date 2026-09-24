@@ -482,12 +482,13 @@
 
       renderer.domElement.addEventListener("pointerup", (event) => {
         const intersection = getGlobeIntersection(event);
-        const shouldSelect = !pointerMoved && pointerDownOnEarth && Boolean(intersection?.uv);
+        const hitGlobeSurface = intersection?.object === earth || intersection?.object === countryOverlay;
+        const shouldSelect = !pointerMoved && pointerDownOnEarth && hitGlobeSurface && Boolean(intersection?.uv);
 
         pointerDownPosition = null;
         pointerDownOnEarth = false;
         pointerMoved = false;
-        renderer.domElement.style.cursor = intersection ? "pointer" : "grab";
+        renderer.domElement.style.cursor = hitGlobeSurface ? "pointer" : "grab";
 
         if (!shouldSelect || countryFeatures.length === 0) {
           return;
