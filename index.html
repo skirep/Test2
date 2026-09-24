@@ -92,7 +92,7 @@
       <div class="hud">
         <h1 id="map-title">Planeta Terra interactiu</h1>
         <p id="map-help">
-          Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits i toca un país per veure'n el nom. Si uses teclat, fes servir la llista de països.
+          Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits i toca un país per veure'n el nom. Les muntanyes es mostren amb relleu. Si uses teclat, fes servir la llista de països.
         </p>
         <label class="sr-only" for="country-select">Selecciona un país</label>
         <select id="country-select" class="country-picker" disabled>
@@ -101,8 +101,8 @@
         <p id="country-name" class="country-label" aria-live="polite" aria-atomic="true">Carregant països...</p>
       </div>
       <p id="map-description" class="sr-only">
-        Visualització interactiva del planeta Terra amb una textura d'alta qualitat, les fronteres dels països
-        superposades i selecció del nom del país quan s'hi fa clic.
+        Visualització interactiva del planeta Terra amb una textura d'alta qualitat, relleu de les muntanyes, les
+        fronteres dels països superposades i selecció del nom del país quan s'hi fa clic.
       </p>
     </div>
 
@@ -120,6 +120,7 @@
       import { prepareCountryData } from "./globe-country-utils.js";
 
       const EARTH_TEXTURE_URL = "./assets/earth_atmos_2048.jpg";
+      const EARTH_BUMP_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/textures/planets/earth_normal_2048.jpg";
       const COUNTRY_DATA_URL = "./assets/countries.geo.json";
       const COUNTRY_CANVAS_WIDTH = 4096;
       const COUNTRY_CANVAS_HEIGHT = 2048;
@@ -199,8 +200,9 @@
         new THREE.SphereGeometry(2.4, 96, 96),
         new THREE.MeshStandardMaterial({
           color: 0x4b85b8,
-          roughness: 0.95,
+          roughness: 0.9,
           metalness: 0,
+          bumpScale: 0.15,
         }),
       );
       earthGroup.add(earth);
@@ -248,6 +250,18 @@
         () => {
           mapHelp.textContent = "Arrossega per girar el planeta, fes zoom amb la roda o amb dos dits. La textura principal de la Terra no s'ha pogut carregar.";
           countryName.textContent = "La textura principal de la Terra no s'ha pogut carregar, però la llista de països continua disponible.";
+        },
+      );
+
+      loader.load(
+        EARTH_BUMP_TEXTURE_URL,
+        (texture) => {
+          earth.material.bumpMap = texture;
+          earth.material.needsUpdate = true;
+        },
+        undefined,
+        () => {
+          console.warn("No s'ha pogut carregar el mapa de relleu de la Terra.");
         },
       );
 
